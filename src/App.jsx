@@ -1,19 +1,48 @@
-import { useEffect } from "react";
-import useSheetStore from "./store/sheetStore";
 import TopicList from "./components/TopicList";
+import useSheetStore from "./store/sheetStore";
+import { useEffect } from "react";
 
 export default function App() {
   const setTopics = useSheetStore((s) => s.setTopics);
+  const addTopic = useSheetStore((s) => s.addTopic);
 
   useEffect(() => {
-    fetch("https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/striver-sde-sheet")
-      .then(res => res.json())
-      .then(data => setTopics(data.data.topics));
+    // mock data (stable)
+    setTopics([
+      { id: "1", title: "Arrays", subTopics: [] },
+      { id: "2", title: "Strings", subTopics: [] },
+      { id: "3", title: "Linked List", subTopics: [] },
+    ]);
   }, []);
 
+  const handleAddTopic = () => {
+    const title = prompt("Enter topic name");
+    if (title && title.trim()) {
+      addTopic(title.trim());
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-4">Codolio Question Sheet</h1>
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ fontSize: "28px", fontWeight: "bold" }}>
+        Codolio Question Sheet
+      </h1>
+
+      <button
+        onClick={handleAddTopic}
+        style={{
+          marginTop: "12px",
+          padding: "8px 14px",
+          backgroundColor: "#2563eb",
+          color: "white",
+          border: "none",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        ➕ Add Topic
+      </button>
+
       <TopicList />
     </div>
   );
