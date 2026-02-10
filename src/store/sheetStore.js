@@ -1,5 +1,4 @@
-import sampleData from "../data/dataset.json";
-import rawDataset from "../data/dataset.json";
+import codolioRaw from "../data/codolio-dataset.json";
 
 
 import { create } from "zustand";
@@ -52,12 +51,49 @@ const loadState = () => {
     return JSON.parse(saved);
   }
 
-  // 👇 Normalize Codolio dataset
-  const normalized = normalizeDataset(rawDataset);
-
+  const normalized = normalizeCodolioDataset(codolioRaw);
   localStorage.setItem("codolio-sheet", JSON.stringify(normalized));
   return normalized;
 };
+
+
+const normalizeCodolioDataset = (raw) => {
+  const topicMap = {};
+
+  raw.data.questions.forEach((item) => {
+    const topicName = item.topic || "General";
+    const subTopicName = item.subTopic || "Misc";
+
+    if (!topicMap[topicName]) {
+      topicMap[topicName] = {
+        id: topicName,
+        title: topicName,
+        subTopics: {},
+      };
+    }
+
+    if (!topicMap[topicName].subTopics[subTopicName]) {
+      topicMap[topicName].subTopics[subTopicName] = {
+        id: `${topicName}-${subTopicName}`,
+        title: subTopicName,
+        questions: [],
+      };
+    }
+
+    topicMap[topicName].subTopics[subTopicName].questions.push({
+      id: item.questionId._id,
+      title: item.questionId.slug.replace(/-/g, " "),
+      done: false,
+    });
+  });
+
+  return Object.values(topicMap).map((topic) => ({
+    id: topic.id,
+    title: topic.title,
+    subTopics: Object.values(topic.subTopics),
+  }));
+};
+
 
 
 const saveState = (topics) => {
