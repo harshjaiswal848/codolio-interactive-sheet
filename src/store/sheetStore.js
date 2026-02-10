@@ -1,62 +1,7 @@
-import codolioRaw from "../data/codolio-dataset.json";
-
-
 import { create } from "zustand";
 import { v4 as uuid } from "uuid";
 
-const normalizeDataset = (raw) => {
-  const topicMap = {};
-
-  raw.data.questions.forEach((q) => {
-    const topicName = q.topic || "General";
-    const subTopicName = q.subTopic || "Misc";
-
-    if (!topicMap[topicName]) {
-      topicMap[topicName] = {
-        id: topicName,
-        title: topicName,
-        subTopics: {},
-      };
-    }
-
-    if (!topicMap[topicName].subTopics[subTopicName]) {
-      topicMap[topicName].subTopics[subTopicName] = {
-        id: `${topicName}-${subTopicName}`,
-        title: subTopicName,
-        questions: [],
-      };
-    }
-
-    topicMap[topicName].subTopics[subTopicName].questions.push({
-      id: q.questionId._id,
-      title: q.questionId.slug.replace(/-/g, " "),
-      done: false,
-    });
-  });
-
-  // convert maps to arrays
-  return Object.values(topicMap).map((topic) => ({
-    id: topic.id,
-    title: topic.title,
-    subTopics: Object.values(topic.subTopics),
-  }));
-};
-
-
-/* ---------- helpers ---------- */
-const loadState = () => {
-  const saved = localStorage.getItem("codolio-sheet");
-
-  if (saved) {
-    return JSON.parse(saved);
-  }
-
-  const normalized = normalizeCodolioDataset(codolioRaw);
-  localStorage.setItem("codolio-sheet", JSON.stringify(normalized));
-  return normalized;
-};
-
-
+/* ---------- NORMALIZER (single source of truth) ---------- */
 const normalizeCodolioDataset = (raw) => {
   const topicMap = {};
 
@@ -94,22 +39,32 @@ const normalizeCodolioDataset = (raw) => {
   }));
 };
 
-
-
+/* ---------- helpers ---------- */
 const saveState = (topics) => {
   localStorage.setItem("codolio-sheet", JSON.stringify(topics));
 };
 
 /* ---------- store ---------- */
-const useSheetStore = create((set) => ({
-  topics: loadState(),
+const useSheetStore = create((set, get) => ({
+  topics: [],
 
-  /* ---------- topic ---------- */
-  setTopics: (topics) => {
-    saveState(topics);
-    set({ topics });
+  /* 🔹 async init (SAFE for Vite & Vercel) */
+  initFromDataset: async () => {
+    const saved = localStorage.getItem("codolio-sheet");
+    if (saved) {
+      set({ topics: JSON.parse(saved) });
+      return;
+    }
+
+    const res = await fetch("/codolio-dataset.json");
+    const raw = await res.json();
+
+    const normalized = normalizeCodolioDataset(raw);
+    saveState(normalized);
+    set({ topics: normalized });
   },
 
+  /* ---------- topic ---------- */
   addTopic: (title) =>
     set((state) => {
       const topics = [
@@ -136,7 +91,6 @@ const useSheetStore = create((set) => ({
       return { topics };
     }),
 
-  /* 🔄 reorder topics */
   reorderTopics: (from, to) =>
     set((state) => {
       const topics = [...state.topics];
@@ -194,7 +148,6 @@ const useSheetStore = create((set) => ({
       return { topics };
     }),
 
-  /* 🔄 reorder sub-topics */
   reorderSubTopics: (topicId, from, to) =>
     set((state) => {
       const topics = state.topics.map((t) => {
@@ -303,7 +256,6 @@ const useSheetStore = create((set) => ({
       return { topics };
     }),
 
-  /* 🔄 reorder questions */
   reorderQuestions: (topicId, subId, from, to) =>
     set((state) => {
       const topics = state.topics.map((t) => {
