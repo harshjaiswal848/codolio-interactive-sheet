@@ -74,7 +74,7 @@ src/
 
 ### Step 1: Clone the repository
 
-git clone https://github.com/harshjais848/codolio-interactive-sheet.git
+git clone https://github.com/harshjaiswal848/codolio-interactive-sheet.git
 
 cd codolio-interactive-sheet
 
