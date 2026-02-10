@@ -1,18 +1,14 @@
+import { useEffect } from "react";
 import TopicList from "./components/TopicList";
 import useSheetStore from "./store/sheetStore";
-import { useEffect } from "react";
 
 export default function App() {
-  const setTopics = useSheetStore((s) => s.setTopics);
+  const initFromDataset = useSheetStore((s) => s.initFromDataset);
   const addTopic = useSheetStore((s) => s.addTopic);
 
+  // 🔹 initialize data once (safe for prod & dev)
   useEffect(() => {
-    // mock data (stable)
-    setTopics([
-      { id: "1", title: "Arrays", subTopics: [] },
-      { id: "2", title: "Strings", subTopics: [] },
-      { id: "3", title: "Linked List", subTopics: [] },
-    ]);
+    initFromDataset();
   }, []);
 
   const handleAddTopic = () => {
